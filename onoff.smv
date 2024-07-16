@@ -1,41 +1,56 @@
+MODULE television(pb_press)
+
+  VAR
+
+    state : {OFF, ON};  -- وضعیت تلویزیون (خاموش یا روشن)
+
+
+
+  ASSIGN
+
+    init(state) := OFF;  -- حالت اولیه: تلویزیون خاموش است
+
+    next(state) := case
+
+                    state = OFF & pb_press : ON;  -- اگر تلویزیون خاموش است و دکمه فشار داده شود، تلویزیون روشن می‌شود
+
+                    state = ON & !pb_press : OFF; -- اگر تلویزیون روشن است و دکمه رها شود، تلویزیون خاموش می‌شود
+
+                    TRUE : state;  -- در غیر این صورت، وضعیت تلویزیون بدون تغییر می‌ماند
+
+                  esac;
+
+MODULE power_button
+
+  VAR
+
+    press : boolean;  -- وضعیت فشردن یا رها کردن دکمه
+
+
+
+  ASSIGN
+
+    init(press) := FALSE;  -- حالت اولیه: دکمه فشرده نشده است
+
+    next(press) := case
+
+                    !press : TRUE;  -- اگر دکمه رها شود، دکمه فشرده می‌شود
+
+                    TRUE : FALSE;  -- و در غیر این صورت، دکمه رها شده است
+
+                  esac;
+
 MODULE main
 
-VAR
+  VAR
 
-    volume : {on, off}; -- متغیر حالت صدای تلویزیون
+    pb_module : power_button;  -- ماژول دکمه خاموش و روشن کردن
 
-    remote : boolean; -- متغیر دستور کنترل تلویزیون (باینری)
-
-
-
-ASSIGN
-
-    init(volume) := off; -- حالت اولیه صدای تلویزیون خاموش است
-
-    init(remote) := FALSE; -- مقدار اولیه کنترل (عدم تغییر)
+    tv_module : television(pb_module.press);  -- ماژول تلویزیون با ورودی دکمه
 
 
 
-    next(volume) :=
+  LTLSPEC G ! (tv_module.state = ON & !pb_module.press);  -- همواره تلویزیون در صورتی که روشن است، دکمه روشن را فشار ندهد
 
-        case
+  LTLSPEC G ! (tv_module.state = OFF & pb_module.press);  -- همواره تلویزیون در صورتی که خاموش است، دکمه روشن را فشار دهد
 
-            remote = TRUE & volume = on : off;
-
-            remote = TRUE & volume = off : on;
-
-            TRUE : volume;
-
-        esac;
-
-
-
-    next(remote) := !remote; -- تغییر مقدار کنترل در هر مرحله
-
-
-
--- تعریف ویژگی‌های مطلوب سیستم
-
-SPEC AG (volume = on -> AX (volume = off))
-
-SPEC AG (volume = off -> AX (volume = on))
